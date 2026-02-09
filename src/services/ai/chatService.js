@@ -29,7 +29,7 @@ Format your responses in markdown for better readability.`;
 // Generate AI response using Gemini
 async function generateResponse(userMessage, conversationHistory, searchResults) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
         // Build context from search results
         let contextFromSearch = '';
@@ -99,40 +99,17 @@ async function searchProblems(queryText) {
 
         const searchPattern = keywords.join(' | ');
 
-        // Search community problems
+        // Search community problems only (other tables will be added in Phase 3)
         const communityResult = await query(
             `SELECT problem_id, title, description, category, tags, 'community' as source
        FROM problems_community
        WHERE to_tsvector('english', title || ' ' || description) @@ to_tsquery('english', $1)
        AND status = 'open'
-       LIMIT 5`,
+       LIMIT 10`,
             [searchPattern]
         );
 
-        // Search scraped problems
-        const scrapedResult = await query(
-            `SELECT problem_id, title, extracted_problem as description, category, tags, 'web_scraped' as source
-       FROM problems_web_scraped
-       WHERE to_tsvector('english', title || ' ' || extracted_problem) @@ to_tsquery('english', $1)
-       AND is_active = true
-       LIMIT 5`,
-            [searchPattern]
-        );
-
-        // Search existing research problems
-        const existingResult = await query(
-            `SELECT problem_id, title, description, category, tags, 'research' as source
-       FROM problems_existing
-       WHERE to_tsvector('english', title || ' ' || description) @@ to_tsquery('english', $1)
-       LIMIT 5`,
-            [searchPattern]
-        );
-
-        const allProblems = [
-            ...communityResult.rows,
-            ...scrapedResult.rows,
-            ...existingResult.rows,
-        ];
+        const allProblems = communityResult.rows;
 
         return {
             problems: allProblems.map(p => ({
@@ -143,7 +120,7 @@ async function searchProblems(queryText) {
                 tags: p.tags,
                 source: p.source,
             })),
-            summary: `Found ${allProblems.length} related problems across our databases`,
+            summary: `Found ${allProblems.length} related problems in our community`,
         };
     } catch (error) {
         console.error('Search problems error:', error);
