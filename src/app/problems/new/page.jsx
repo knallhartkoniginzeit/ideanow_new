@@ -16,6 +16,19 @@ const scaleOptions = [
     { value: 'enterprise', label: 'Enterprise', desc: 'Major initiative (3+ months)' },
 ];
 
+const suggestedTags = [
+    'MVP', 'Prototype', 'Mobile App', 'Web App', 'API', 'Database', 'Frontend', 'Backend',
+    'Full Stack', 'UI/UX', 'Machine Learning', 'AI', 'Blockchain', 'Cloud', 'DevOps',
+    'E-commerce', 'SaaS', 'Analytics', 'Automation', 'Integration', 'Migration', 'Optimization'
+];
+
+const suggestedSkills = [
+    'React', 'Node.js', 'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'Go',
+    'AWS', 'Docker', 'Kubernetes', 'PostgreSQL', 'MongoDB', 'Redis', 'GraphQL',
+    'Next.js', 'Vue.js', 'Angular', 'Django', 'Flask', 'Spring Boot', 'TensorFlow',
+    'PyTorch', 'Figma', 'Adobe XD', 'Git', 'CI/CD', 'Microservices', 'REST API'
+];
+
 export default function NewProblemPage() {
     const router = useRouter();
     const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -312,6 +325,30 @@ export default function NewProblemPage() {
                                         <Plus className="w-5 h-5" />
                                     </button>
                                 </div>
+
+                                {/* Suggested Tags */}
+                                {formData.tags.length === 0 && (
+                                    <div className="mb-3">
+                                        <p className="text-xs text-muted-foreground mb-2">Suggested tags:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {suggestedTags.slice(0, 12).map((tag) => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!formData.tags.includes(tag)) {
+                                                            setFormData({ ...formData, tags: [...formData.tags, tag] });
+                                                        }
+                                                    }}
+                                                    className="px-2 py-1 text-xs bg-secondary/50 hover:bg-secondary rounded-md transition-colors"
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex flex-wrap gap-2">
                                     {formData.tags.map((tag) => (
                                         <span key={tag} className="flex items-center gap-1 px-3 py-1.5 bg-secondary rounded-full text-sm">
@@ -339,6 +376,30 @@ export default function NewProblemPage() {
                                         <Plus className="w-5 h-5" />
                                     </button>
                                 </div>
+
+                                {/* Suggested Skills */}
+                                {formData.requiredSkills.length === 0 && (
+                                    <div className="mb-3">
+                                        <p className="text-xs text-muted-foreground mb-2">Suggested skills:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {suggestedSkills.slice(0, 15).map((skill) => (
+                                                <button
+                                                    key={skill}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!formData.requiredSkills.includes(skill)) {
+                                                            setFormData({ ...formData, requiredSkills: [...formData.requiredSkills, skill] });
+                                                        }
+                                                    }}
+                                                    className="px-2 py-1 text-xs bg-primary/5 hover:bg-primary/10 text-primary rounded-md transition-colors"
+                                                >
+                                                    + {skill}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex flex-wrap gap-2">
                                     {formData.requiredSkills.map((skill) => (
                                         <span key={skill} className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm">

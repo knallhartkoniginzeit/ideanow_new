@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     try {
         const result = await query(
-            `SELECT category_id, name, description, icon, color, parent_id
+            `SELECT category_id, name, description, icon
        FROM categories
        ORDER BY name ASC`
         );
@@ -18,8 +18,6 @@ router.get('/', async (req, res) => {
                 name: c.name,
                 description: c.description,
                 icon: c.icon,
-                color: c.color,
-                parentId: c.parent_id,
             })),
         });
     } catch (error) {
