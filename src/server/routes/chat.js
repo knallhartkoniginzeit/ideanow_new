@@ -7,7 +7,7 @@ const { generateResponse, searchProblems, createSession, getSessionHistory } = r
 const router = express.Router();
 
 // POST /api/chat/query - Process a chat message
-router.post('/query', authenticate, [
+router.post('/query', [
     body('message').trim().isLength({ min: 1 }).withMessage('Message is required'),
     body('sessionId').optional().isUUID(),
 ], async (req, res) => {
@@ -19,14 +19,27 @@ router.post('/query', authenticate, [
 
         const { message, sessionId } = req.body;
 
-        // Get or create session
-        let currentSessionId = sessionId;
-        if (!currentSessionId) {
-            currentSessionId = await createSession(req.user.user_id, message.substring(0, 100));
+        // Get user from token if provided (optional)
+        let userId = null;
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.user_id;
+            } catch (err) {
+                // Token invalid, continue as guest
+            }
         }
 
-        // Get conversation history
-        const history = await getSessionHistory(currentSessionId);
+        // Get or create session (only if authenticated)
+        let currentSessionId = sessionId;
+        if (userId && !currentSessionId) {
+            currentSessionId = await createSession(userId, message.substring(0, 100));
+        }
+
+        // Get conversation history (only if session exists)
+        const history = currentSessionId ? await getSessionHistory(currentSessionId) : [];
 
         // Search relevant problems from all databases
         const searchResults = await searchProblems(message);
@@ -34,17 +47,20 @@ router.post('/query', authenticate, [
         // Generate AI response
         const response = await generateResponse(message, history, searchResults);
 
-        // Save user message
-        await query(
-            `INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'user', $2)`,
-            [currentSessionId, message]
-        );
+        // Save messages only if authenticated and has session
+        if (userId && currentSessionId) {
+            // Save user message
+            await query(
+                `INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'user', $2)`,
+                [currentSessionId, message]
+            );
 
-        // Save assistant response
-        await query(
-            `INSERT INTO chat_messages (session_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`,
-            [currentSessionId, response.content, JSON.stringify({ searchResults: searchResults.summary })]
-        );
+            // Save assistant response
+            await query(
+                `INSERT INTO chat_messages (session_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`,
+                [currentSessionId, response.content, JSON.stringify({ searchResults: searchResults.summary })]
+            );
+        }
 
         res.json({
             sessionId: currentSessionId,
