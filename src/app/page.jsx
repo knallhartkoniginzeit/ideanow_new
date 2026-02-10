@@ -165,82 +165,9 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Benefits Section */}
-            <section className="py-24">
-                <div className="container mx-auto px-4">
-                    <div className="grid lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 className="text-4xl font-bold mb-6">Why Choose !deanow?</h2>
-                            <div className="space-y-6">
-                                {[
-                                    { icon: Zap, title: 'Fast Problem Discovery', desc: 'AI-powered search across millions of data points' },
-                                    { icon: Shield, title: 'Secure Transactions', desc: 'Escrow system protects both parties in paid projects' },
-                                    { icon: Star, title: 'Quality Community', desc: 'Verified solvers with ratings and reviews' },
-                                    { icon: DollarSign, title: 'Flexible Pricing', desc: 'From free collaborations to enterprise projects' },
-                                ].map((item, i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                                            <item.icon className="w-6 h-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold mb-1">{item.title}</h3>
-                                            <p className="text-muted-foreground">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
 
-                        {/* Stats Card */}
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20" />
-                            <div className="relative bg-card rounded-3xl p-8 border border-border">
-                                <div className="text-center mb-8">
-                                    <div className="text-6xl font-bold text-gradient mb-2">95%</div>
-                                    <p className="text-muted-foreground">of users find valuable problem insights within first session</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-secondary/50 rounded-xl p-4 text-center">
-                                        <div className="text-2xl font-bold text-primary">2.5x</div>
-                                        <p className="text-sm text-muted-foreground">Faster ideation</p>
-                                    </div>
-                                    <div className="bg-secondary/50 rounded-xl p-4 text-center">
-                                        <div className="text-2xl font-bold text-accent">85%</div>
-                                        <p className="text-sm text-muted-foreground">Success rate</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
-            {/* CTA Section */}
-            <section className="py-24 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-primary opacity-90" />
-                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
 
-                <div className="container mx-auto px-4 relative z-10 text-center text-white">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Innovate?</h2>
-                    <p className="text-xl opacity-90 max-w-2xl mx-auto mb-10">
-                        Join thousands of problem solvers and innovators. Start discovering
-                        meaningful problems today.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link href="/auth/register"
-                            className="bg-white text-primary px-8 py-4 rounded-lg font-semibold text-lg
-                           hover:bg-white/90 transition-colors flex items-center justify-center gap-2">
-                            Get Started Free
-                            <ArrowRight className="w-5 h-5" />
-                        </Link>
-                        <Link href="/chat"
-                            className="bg-white/10 border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold text-lg
-                           hover:bg-white/20 transition-colors">
-                            Try AI Chat Demo
-                        </Link>
-                    </div>
-                </div>
-            </section>
         </div>
     );
 }

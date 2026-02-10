@@ -148,6 +148,45 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 });
 
+// GET /api/problems/trending - Get trending problems
+router.get('/trending/list', async (req, res) => {
+    try {
+        const result = await query(
+            `SELECT 
+        pc.problem_id, pc.title, pc.category, pc.tags, pc.scale, pc.budget,
+        pc.views_count, pc.applications_count, pc.created_at,
+        u.name as poster_name, u.avatar_url as poster_avatar
+       FROM problems_community pc
+       JOIN users u ON pc.user_id = u.user_id
+       WHERE pc.status = 'open' 
+         AND pc.created_at > NOW() - INTERVAL '7 days'
+       ORDER BY (pc.views_count + pc.applications_count * 5) DESC
+       LIMIT 10`
+        );
+
+        res.json({
+            trending: result.rows.map(p => ({
+                id: p.problem_id,
+                title: p.title,
+                category: p.category,
+                tags: p.tags,
+                scale: p.scale,
+                budget: p.budget ? parseFloat(p.budget) : null,
+                viewsCount: p.views_count,
+                applicationsCount: p.applications_count,
+                createdAt: p.created_at,
+                poster: {
+                    name: p.poster_name,
+                    avatarUrl: p.poster_avatar,
+                },
+            })),
+        });
+    } catch (error) {
+        console.error('Trending problems error:', error);
+        res.status(500).json({ error: 'Failed to fetch trending problems' });
+    }
+});
+
 // GET /api/problems/:id - Get single problem
 router.get('/:id', optionalAuth, async (req, res) => {
     try {
@@ -603,43 +642,6 @@ router.post('/:id/accept/:applicationId', authenticate, async (req, res) => {
     }
 });
 
-// GET /api/problems/trending - Get trending problems
-router.get('/trending/list', async (req, res) => {
-    try {
-        const result = await query(
-            `SELECT 
-        pc.problem_id, pc.title, pc.category, pc.tags, pc.scale, pc.budget,
-        pc.views_count, pc.applications_count, pc.created_at,
-        u.name as poster_name, u.avatar_url as poster_avatar
-       FROM problems_community pc
-       JOIN users u ON pc.user_id = u.user_id
-       WHERE pc.status = 'open' 
-         AND pc.created_at > NOW() - INTERVAL '7 days'
-       ORDER BY (pc.views_count + pc.applications_count * 5) DESC
-       LIMIT 10`
-        );
 
-        res.json({
-            trending: result.rows.map(p => ({
-                id: p.problem_id,
-                title: p.title,
-                category: p.category,
-                tags: p.tags,
-                scale: p.scale,
-                budget: p.budget ? parseFloat(p.budget) : null,
-                viewsCount: p.views_count,
-                applicationsCount: p.applications_count,
-                createdAt: p.created_at,
-                poster: {
-                    name: p.poster_name,
-                    avatarUrl: p.poster_avatar,
-                },
-            })),
-        });
-    } catch (error) {
-        console.error('Trending problems error:', error);
-        res.status(500).json({ error: 'Failed to fetch trending problems' });
-    }
-});
 
 module.exports = router;

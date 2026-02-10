@@ -30,7 +30,7 @@ const SYSTEM_PROMPT = `You are an AI assistant for !deanow, a platform that help
 // Generate AI response using Gemini
 async function generateResponse(userMessage, conversationHistory, searchResults) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         // Build context from search results
         let contextFromSearch = '';

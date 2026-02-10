@@ -30,6 +30,8 @@ export default function ProblemDetailPage() {
     }, [id]);
 
     const fetchProblem = async () => {
+        if (!id || id === 'undefined' || id === 'null') return;
+
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/problems/${id}`, {

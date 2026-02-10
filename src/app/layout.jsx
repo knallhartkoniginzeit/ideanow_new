@@ -33,14 +33,8 @@ export default function RootLayout({ children }) {
                                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                     <div className="flex items-center gap-2">
                                         <span className="text-2xl font-bold text-gradient">!deanow</span>
-                                        <span className="text-muted-foreground text-sm">© 2024</span>
                                     </div>
-                                    <nav className="flex gap-6 text-sm text-muted-foreground">
-                                        <a href="/about" className="hover:text-foreground transition-colors">About</a>
-                                        <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
-                                        <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
-                                        <a href="/contact" className="hover:text-foreground transition-colors">Contact</a>
-                                    </nav>
+
                                 </div>
                             </div>
                         </footer>

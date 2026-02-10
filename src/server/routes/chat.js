@@ -40,7 +40,7 @@ router.post('/query', [
             try {
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                userId = decoded.user_id;
+                userId = decoded.userId;
             } catch (err) {
                 // Token invalid, continue as guest
             }
