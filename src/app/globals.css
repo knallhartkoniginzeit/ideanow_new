@@ -10,7 +10,7 @@
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --primary: 262 83% 58%;
+    --primary: 45 93% 47%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 262 83% 58%;
+    --ring: 45 93% 47%;
     --radius: 0.75rem;
   }
 
@@ -31,7 +31,7 @@
     --foreground: 210 40% 98%;
     --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
-    --primary: 262 83% 58%;
+    --primary: 45 93% 47%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
@@ -43,7 +43,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 262 83% 58%;
+    --ring: 45 93% 47%;
   }
 }
 
@@ -62,9 +62,10 @@
 }
 
 @layer components {
+
   /* Gradient backgrounds */
   .bg-gradient-primary {
-    background: linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(280, 100%, 60%) 50%, hsl(174, 72%, 56%) 100%);
+    background: linear-gradient(135deg, hsl(45, 93%, 47%) 0%, hsl(35, 100%, 50%) 50%, hsl(174, 72%, 56%) 100%);
   }
 
   .bg-gradient-dark {
@@ -87,31 +88,25 @@
 
   /* Buttons */
   .btn-primary {
-    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold 
-           transition-all duration-300 hover:opacity-90 hover:shadow-lg hover:shadow-primary/25
-           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:opacity-90 hover:shadow-lg hover:shadow-primary/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold
-           transition-all duration-300 hover:bg-secondary/80 active:scale-95;
+    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:bg-secondary/80 active:scale-95;
   }
 
   .btn-outline {
-    @apply border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold
-           transition-all duration-300 hover:bg-primary hover:text-primary-foreground active:scale-95;
+    @apply border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:bg-primary hover:text-primary-foreground active:scale-95;
   }
 
   /* Inputs */
   .input-base {
-    @apply w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground
-           placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50
-           transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200;
   }
 
   /* Text gradient */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-accent;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 via-amber-500 to-accent;
   }
 
   /* Animations */
@@ -125,13 +120,25 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 10px -10px hsl(262, 83%, 58%); }
-  to { box-shadow: 0 0 20px 5px hsl(262, 83%, 58%); }
+  from {
+    box-shadow: 0 0 10px -10px hsl(262, 83%, 58%);
+  }
+
+  to {
+    box-shadow: 0 0 20px 5px hsl(262, 83%, 58%);
+  }
 }
 
 /* Scrollbar styling */

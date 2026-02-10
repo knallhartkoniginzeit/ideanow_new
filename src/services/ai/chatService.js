@@ -4,39 +4,37 @@ const { query } = require('../../db');
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const SYSTEM_PROMPT = `You are an AI assistant for !deanow, a platform that helps users discover and refine niche problem statements. Your role is to:
+const SYSTEM_PROMPT = `You are an AI assistant for !deanow, a platform that helps users discover and refine niche problem statements. Your goal is to guide the user through a structured refinement process.
 
-1. Understand user's initial problem idea
-2. Help them refine it into a more specific, actionable problem statement
-3. Suggest related work, innovations, and improvements
-4. Connect them with similar problems from our database
+### Your Interaction Style:
+1. **Be Conversational & Guided**: Do NOT dump a long analysis immediately. Start by understanding the core idea.
+2. **Ask Clarifying Questions**: If the user's idea is vague, ask 1-2 specific questions to narrow it down before offering solutions.
+3. **Structured Output**: Use clear headings, bullet points, and short paragraphs. Avoid walls of text.
 
-When a user provides a problem idea:
-- Extract key concepts and domain
-- Ask clarifying questions if the problem is too vague
-- Provide a structured response with:
-  * Refined problem statement
-  * Related work summary (if found in database)
-  * Innovation opportunities
-  * Suggested improvements
-  * Niche angle based on current trends
+### When analyzing a problem:
+1. **Check for Similarity**: Compare the user's idea with the provided database problems.
+2. **Relevance Score**: If a database problem is similar, assign a "Relevance Score" (0-100%).
+3. **Clickable Links**: When referencing a database problem, ALWAYS format it as a link: [Problem Title](/problems/ProblemID).
 
-Always aim to make the problem more specific, actionable, and innovative.
-Be encouraging and supportive while also being constructively critical to help them improve their idea.
+### Response Structure (Iterative):
+- **Phase 1 (Initial Idea)**: Acknowledge the idea, identify the domain, and ask clarifying questions to refine the scope.
+- **Phase 2 (Refinement)**: Once you have enough info, propose a "Refined Problem Statement" and show "Related Problems" with scores.
+- **Phase 3 (Deep Dive)**: Only after the user confirms the direction, provide innovation opportunities and technical suggestions.
 
-Format your responses in markdown for better readability.`;
+**Format your responses in clean Markdown.**`;
 
 // Generate AI response using Gemini
 async function generateResponse(userMessage, conversationHistory, searchResults) {
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
         // Build context from search results
         let contextFromSearch = '';
         if (searchResults.problems.length > 0) {
-            contextFromSearch = `\n\nRelevant problems found in our database:\n`;
+            contextFromSearch = `\n\n### Database Matches (Use these for similarity analysis):\n`;
             searchResults.problems.slice(0, 3).forEach((p, i) => {
-                contextFromSearch += `${i + 1}. "${p.title}" (${p.source}): ${p.description.substring(0, 150)}...\n`;
+                // Formatting links for the AI to use
+                contextFromSearch += `${i + 1}. Title: "${p.title}" | ID: ${p.id} | Link: /problems/${p.id} | Desc: ${p.description.substring(0, 150)}...\n`;
             });
         }
 
@@ -50,13 +48,13 @@ async function generateResponse(userMessage, conversationHistory, searchResults)
         const chat = model.startChat({
             history: historyMessages,
             generationConfig: {
-                maxOutputTokens: 2000,
+                maxOutputTokens: 1000, // Reduced for more concise responses
                 temperature: 0.7,
             },
         });
 
         // Send message with context
-        const prompt = `${SYSTEM_PROMPT}\n${contextFromSearch}\n\nUser: ${userMessage}`;
+        const prompt = `${SYSTEM_PROMPT}\n${contextFromSearch}\n\nUser: ${userMessage}\n\nINSTRUCTION: improved guided response with clickable links [Title](/problems/ID) for related items.`;
         const result = await chat.sendMessage(prompt);
         const responseText = result.response.text();
 
@@ -83,8 +81,77 @@ async function generateResponse(userMessage, conversationHistory, searchResults)
         };
     } catch (error) {
         console.error('Gemini API error:', error);
-        throw new Error('Failed to generate response');
+
+        // FALLBACK: Provide intelligent response without Gemini
+        return generateFallbackResponse(userMessage, searchResults);
     }
+}
+
+// Fallback response when Gemini API is unavailable
+function generateFallbackResponse(userMessage, searchResults) {
+    const keywords = userMessage.toLowerCase();
+    let response = `## Problem Analysis\n\n`;
+    response += `Thank you for sharing your problem idea! While our AI assistant is temporarily unavailable, I can still help you refine your problem statement.\n\n`;
+
+    // Detect domain
+    const domains = {
+        'healthcare': 'Healthcare & Medical Technology',
+        'health': 'Healthcare & Medical Technology',
+        'medical': 'Healthcare & Medical Technology',
+        'education': 'Education & E-Learning',
+        'learning': 'Education & E-Learning',
+        'finance': 'Finance & Fintech',
+        'payment': 'Finance & Fintech',
+        'ecommerce': 'E-commerce & Retail',
+        'shopping': 'E-commerce & Retail',
+        'ai': 'Artificial Intelligence',
+        'machine learning': 'Machine Learning',
+        'blockchain': 'Blockchain & Web3',
+    };
+
+    let detectedDomain = 'Technology';
+    for (const [keyword, domain] of Object.entries(domains)) {
+        if (keywords.includes(keyword)) {
+            detectedDomain = domain;
+            break;
+        }
+    }
+
+    response += `### Detected Domain\n**${detectedDomain}**\n\n`;
+
+    // Provide guidance
+    response += `### Next Steps to Refine Your Problem\n\n`;
+    response += `1. **Be Specific**: What exact pain point are you addressing?\n`;
+    response += `2. **Define Your Users**: Who will benefit from solving this problem?\n`;
+    response += `3. **Scope It Down**: Can you focus on one specific aspect first?\n`;
+    response += `4. **Research**: Check if similar solutions exist and how yours is different\n\n`;
+
+    // Show related problems if any
+    if (searchResults.problems.length > 0) {
+        response += `### Related Problems in Our Community\n\n`;
+        response += `I found ${searchResults.problems.length} similar problems:\n\n`;
+        searchResults.problems.slice(0, 3).forEach((p, i) => {
+            response += `${i + 1}. **${p.title}** (${p.category})\n`;
+        });
+        response += `\n`;
+    }
+
+    response += `### Ready to Post?\n\n`;
+    response += `Once you've refined your problem, you can [post it to our community](/problems/new) to get feedback and find solvers!\n\n`;
+    response += `*Note: Our AI assistant will be back online soon for more detailed problem refinement.*`;
+
+    const refinedProblem = `${detectedDomain} problem: ${userMessage.substring(0, 100)}`;
+
+    return {
+        content: response,
+        refinedProblem,
+        suggestions: [
+            'Define the specific user pain point',
+            'Research existing solutions',
+            'Identify your unique value proposition',
+            'Start with an MVP scope',
+        ],
+    };
 }
 
 // Search problems across all databases

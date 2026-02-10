@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/authContext';
+import NotificationBell from './NotificationBell';
 import {
     Menu, X, Search, MessageSquare, PlusCircle, User, LogOut, ChevronDown,
-    Sparkles, TrendingUp, Bell, Users
+    Lightbulb, TrendingUp, Bell, Users
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -19,9 +20,9 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center
-                          group-hover:shadow-lg group-hover:shadow-primary/25 transition-all duration-300">
-                            <Sparkles className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center
+                          group-hover:shadow-lg group-hover:shadow-yellow-500/25 transition-all duration-300">
+                            <Lightbulb className="w-5 h-5 text-white" />
                         </div>
                         <span className="text-xl font-bold text-gradient">!deanow</span>
                     </Link>
@@ -67,10 +68,7 @@ export default function Navbar() {
                                 </Link>
 
                                 {/* Notifications */}
-                                <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors">
-                                    <Bell className="w-5 h-5 text-muted-foreground" />
-                                    <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-                                </button>
+                                <NotificationBell />
 
                                 {/* User Menu */}
                                 <div className="relative">
@@ -78,7 +76,7 @@ export default function Navbar() {
                                         onClick={() => setUserMenuOpen(!userMenuOpen)}
                                         className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary transition-colors"
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-white font-semibold text-sm">
                                             {user?.name?.charAt(0).toUpperCase() || 'U'}
                                         </div>
                                         <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -92,15 +90,10 @@ export default function Navbar() {
                                                     <p className="font-medium truncate">{user?.name}</p>
                                                     <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
                                                 </div>
-                                                <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary transition-colors"
+                                                <Link href="/applications" className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary transition-colors"
                                                     onClick={() => setUserMenuOpen(false)}>
                                                     <TrendingUp className="w-4 h-4" />
-                                                    <span>Dashboard</span>
-                                                </Link>
-                                                <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary transition-colors"
-                                                    onClick={() => setUserMenuOpen(false)}>
-                                                    <User className="w-4 h-4" />
-                                                    <span>Profile</span>
+                                                    <span>My Applications</span>
                                                 </Link>
                                                 <hr className="my-2 border-border" />
                                                 <button

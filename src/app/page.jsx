@@ -25,12 +25,7 @@ const features = [
     },
 ];
 
-const stats = [
-    { value: '10K+', label: 'Problems Solved' },
-    { value: '50K+', label: 'Active Users' },
-    { value: '95%', label: 'Satisfaction Rate' },
-    { value: '24/7', label: 'AI Support' },
-];
+
 
 const categories = [
     { name: 'Technology', icon: '💻', problems: 2847 },
@@ -83,15 +78,7 @@ export default function HomePage() {
                             </Link>
                         </div>
 
-                        {/* Trust Indicators */}
-                        <div className="flex flex-wrap justify-center gap-8 mt-16 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                            {stats.map((stat, i) => (
-                                <div key={i} className="text-center">
-                                    <div className="text-3xl font-bold text-gradient">{stat.value}</div>
-                                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                                </div>
-                            ))}
-                        </div>
+
                     </div>
                 </div>
             </section>

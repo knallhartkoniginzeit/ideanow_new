@@ -6,6 +6,20 @@ const { generateResponse, searchProblems, createSession, getSessionHistory } = r
 
 const router = express.Router();
 
+// TEMP: Run migration manually
+router.get('/fix-db', async (req, res) => {
+    try {
+        await query(`
+            ALTER TABLE chat_sessions 
+            ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
+        `);
+        res.json({ message: 'Database updated successfully! Please refresh.' });
+    } catch (error) {
+        console.error('Migration error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST /api/chat/query - Process a chat message
 router.post('/query', [
     body('message').trim().isLength({ min: 1 }).withMessage('Message is required'),
@@ -35,7 +49,9 @@ router.post('/query', [
         // Get or create session (only if authenticated)
         let currentSessionId = sessionId;
         if (userId && !currentSessionId) {
+            console.log('Creating new session for user:', userId);
             currentSessionId = await createSession(userId, message.substring(0, 100));
+            console.log('Created session:', currentSessionId);
         }
 
         // Get conversation history (only if session exists)
@@ -49,6 +65,7 @@ router.post('/query', [
 
         // Save messages only if authenticated and has session
         if (userId && currentSessionId) {
+            console.log('Saving messages for session:', currentSessionId);
             // Save user message
             await query(
                 `INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'user', $2)`,
@@ -60,6 +77,7 @@ router.post('/query', [
                 `INSERT INTO chat_messages (session_id, role, content, metadata) VALUES ($1, 'assistant', $2, $3)`,
                 [currentSessionId, response.content, JSON.stringify({ searchResults: searchResults.summary })]
             );
+            console.log('Messages saved successfully');
         }
 
         res.json({
@@ -79,10 +97,10 @@ router.post('/query', [
 router.get('/sessions', authenticate, async (req, res) => {
     try {
         const result = await query(
-            `SELECT session_id, title, created_at, updated_at
+            `SELECT session_id, title, created_at, updated_at, is_pinned
        FROM chat_sessions
        WHERE user_id = $1
-       ORDER BY updated_at DESC
+       ORDER BY is_pinned DESC, updated_at DESC
        LIMIT 20`,
             [req.user.user_id]
         );
@@ -93,11 +111,34 @@ router.get('/sessions', authenticate, async (req, res) => {
                 title: s.title,
                 createdAt: s.created_at,
                 updatedAt: s.updated_at,
+                isPinned: s.is_pinned || false,
             })),
         });
     } catch (error) {
         console.error('Get sessions error:', error);
         res.status(500).json({ error: 'Failed to fetch sessions' });
+    }
+});
+
+// PUT /api/chat/sessions/:id/pin - Toggle pin status
+router.put('/sessions/:id/pin', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isPinned } = req.body;
+
+        const result = await query(
+            'UPDATE chat_sessions SET is_pinned = $1 WHERE session_id = $2 AND user_id = $3 RETURNING session_id, is_pinned',
+            [isPinned, id, req.user.user_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+
+        res.json({ message: 'Session updated', isPinned: result.rows[0].is_pinned });
+    } catch (error) {
+        console.error('Update session pin error:', error);
+        res.status(500).json({ error: 'Failed to update session' });
     }
 });
 
@@ -108,7 +149,7 @@ router.get('/sessions/:id', authenticate, async (req, res) => {
 
         // Verify session belongs to user
         const sessionResult = await query(
-            'SELECT user_id, title FROM chat_sessions WHERE session_id = $1',
+            'SELECT user_id, title, is_pinned FROM chat_sessions WHERE session_id = $1',
             [id]
         );
 
@@ -132,6 +173,7 @@ router.get('/sessions/:id', authenticate, async (req, res) => {
             session: {
                 id,
                 title: sessionResult.rows[0].title,
+                isPinned: sessionResult.rows[0].is_pinned || false,
             },
             messages: messagesResult.rows.map(m => ({
                 id: m.message_id,

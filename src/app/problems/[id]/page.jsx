@@ -64,6 +64,10 @@ export default function ProblemDetailPage() {
         setApplying(true);
         try {
             const token = localStorage.getItem('token');
+
+            // Log the data being sent for debugging
+            console.log('Submitting application:', applicationForm);
+
             const res = await fetch(`/api/problems/${id}/apply`, {
                 method: 'POST',
                 headers: {
@@ -74,14 +78,29 @@ export default function ProblemDetailPage() {
             });
 
             const data = await res.json();
+            console.log('Server response:', { status: res.status, data });
 
-            if (!res.ok) throw new Error(data.error);
+            if (!res.ok) {
+                // Handle validation errors
+                if (data.errors && Array.isArray(data.errors)) {
+                    const errorMessages = data.errors.map(err => err.msg).join(', ');
+                    throw new Error(errorMessages);
+                }
+                throw new Error(data.error || data.message || 'Failed to submit application');
+            }
 
             toast.success('Application submitted successfully!');
             setShowApplyModal(false);
+            setApplicationForm({
+                coverLetter: '',
+                proposedApproach: '',
+                estimatedTime: '',
+                proposedBudget: '',
+            });
             fetchProblem();
         } catch (error) {
-            toast.error(error.message);
+            console.error('Application submission error:', error);
+            toast.error(error.message || 'Failed to submit application');
         } finally {
             setApplying(false);
         }
@@ -297,8 +316,25 @@ export default function ProblemDetailPage() {
                         </div>
 
                         <form onSubmit={handleApply} className="p-6 space-y-5">
+                            {/* Requirements Info Box */}
+                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                                <h4 className="text-sm font-semibold text-blue-400 mb-2">📝 Minimum Requirements</h4>
+                                <ul className="text-xs text-blue-300 space-y-1">
+                                    <li>• Cover Letter: <strong>50 characters minimum</strong></li>
+                                    <li>• Proposed Approach: <strong>20 characters minimum</strong></li>
+                                </ul>
+                                <p className="text-xs text-blue-300/70 mt-2">
+                                    The submit button will be enabled once you meet these requirements.
+                                </p>
+                            </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-2">Cover Letter *</label>
+                                <label className="block text-sm font-medium mb-2">
+                                    Cover Letter *
+                                    <span className={`ml-2 text-xs ${applicationForm.coverLetter.length >= 50 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                        ({applicationForm.coverLetter.length}/50 minimum)
+                                    </span>
+                                </label>
                                 <textarea
                                     value={applicationForm.coverLetter}
                                     onChange={(e) => setApplicationForm({ ...applicationForm, coverLetter: e.target.value })}
@@ -307,10 +343,20 @@ export default function ProblemDetailPage() {
                                     className="input-base"
                                     required
                                 />
+                                {applicationForm.coverLetter.length > 0 && applicationForm.coverLetter.length < 50 && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                        Need {50 - applicationForm.coverLetter.length} more characters
+                                    </p>
+                                )}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-2">Proposed Approach *</label>
+                                <label className="block text-sm font-medium mb-2">
+                                    Proposed Approach *
+                                    <span className={`ml-2 text-xs ${applicationForm.proposedApproach.length >= 20 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                                        ({applicationForm.proposedApproach.length}/20 minimum)
+                                    </span>
+                                </label>
                                 <textarea
                                     value={applicationForm.proposedApproach}
                                     onChange={(e) => setApplicationForm({ ...applicationForm, proposedApproach: e.target.value })}
@@ -319,6 +365,11 @@ export default function ProblemDetailPage() {
                                     className="input-base"
                                     required
                                 />
+                                {applicationForm.proposedApproach.length > 0 && applicationForm.proposedApproach.length < 20 && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                        Need {20 - applicationForm.proposedApproach.length} more characters
+                                    </p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -338,7 +389,7 @@ export default function ProblemDetailPage() {
                                         type="number"
                                         value={applicationForm.proposedBudget}
                                         onChange={(e) => setApplicationForm({ ...applicationForm, proposedBudget: e.target.value })}
-                                        placeholder="USD"
+                                        placeholder="INR"
                                         className="input-base"
                                     />
                                 </div>
@@ -348,7 +399,11 @@ export default function ProblemDetailPage() {
                                 <button type="button" onClick={() => setShowApplyModal(false)} className="btn-secondary flex-1">
                                     Cancel
                                 </button>
-                                <button type="submit" disabled={applying} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                                <button
+                                    type="submit"
+                                    disabled={applying || applicationForm.coverLetter.length < 50 || applicationForm.proposedApproach.length < 20}
+                                    className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     {applying ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                                     Submit Application
                                 </button>

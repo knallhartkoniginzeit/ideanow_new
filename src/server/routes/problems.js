@@ -163,7 +163,9 @@ router.get('/:id', optionalAuth, async (req, res) => {
             `SELECT 
         pc.*,
         u.user_id as poster_id, u.name as poster_name, u.email as poster_email,
-        u.avatar_url as poster_avatar, u.rating as poster_rating, u.completed_projects as poster_projects,
+        u.avatar_url as poster_avatar, 
+        COALESCE(u.rating, 0.00) as poster_rating, 
+        COALESCE(u.completed_projects, 0) as poster_projects,
         s.user_id as solver_id, s.name as solver_name, s.avatar_url as solver_avatar
        FROM problems_community pc
        JOIN users u ON pc.user_id = u.user_id
@@ -216,8 +218,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
                 id: p.poster_id,
                 name: p.poster_name,
                 avatarUrl: p.poster_avatar,
-                rating: parseFloat(p.poster_rating),
-                completedProjects: p.poster_projects,
+                rating: parseFloat(p.poster_rating) || 0,
+                completedProjects: p.poster_projects || 0,
             },
             solver: p.solver_id ? {
                 id: p.solver_id,
@@ -231,7 +233,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('Get problem error:', error);
-        res.status(500).json({ error: 'Failed to fetch problem' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Failed to fetch problem', details: error.message });
     }
 });
 
@@ -396,7 +399,7 @@ router.post('/:id/apply', authenticate, [
 
         // Check if problem exists and is open
         const problemResult = await query(
-            'SELECT user_id, status FROM problems_community WHERE problem_id = $1',
+            'SELECT user_id, status, title FROM problems_community WHERE problem_id = $1',
             [id]
         );
 
@@ -423,9 +426,10 @@ router.post('/:id/apply', authenticate, [
         }
 
         // Create application
-        await query(
+        const appResult = await query(
             `INSERT INTO applications (problem_id, solver_id, cover_letter, proposed_approach, estimated_time, proposed_budget)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING application_id`,
             [id, req.user.user_id, coverLetter, proposedApproach, estimatedTime, proposedBudget]
         );
 
@@ -433,6 +437,17 @@ router.post('/:id/apply', authenticate, [
         await query(
             'UPDATE problems_community SET applications_count = applications_count + 1 WHERE problem_id = $1',
             [id]
+        );
+
+        // Create notification for problem owner
+        const { createNotification } = require('./notifications');
+        await createNotification(
+            problemResult.rows[0].user_id,
+            'application_received',
+            'New Application Received',
+            `${req.user.name} applied to solve your problem: "${problemResult.rows[0].title}"`,
+            `/applications`,
+            appResult.rows[0].application_id
         );
 
         res.status(201).json({ message: 'Application submitted successfully' });
@@ -504,7 +519,7 @@ router.post('/:id/accept/:applicationId', authenticate, async (req, res) => {
 
         // Check ownership
         const problemResult = await query(
-            'SELECT user_id, status FROM problems_community WHERE problem_id = $1',
+            'SELECT user_id, status, title FROM problems_community WHERE problem_id = $1',
             [id]
         );
 
@@ -520,7 +535,7 @@ router.post('/:id/accept/:applicationId', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Problem is not open' });
         }
 
-        // Get application
+        // Get application and all other applications
         const appResult = await query(
             'SELECT solver_id FROM applications WHERE application_id = $1 AND problem_id = $2',
             [applicationId, id]
@@ -531,6 +546,12 @@ router.post('/:id/accept/:applicationId', authenticate, async (req, res) => {
         }
 
         const solverId = appResult.rows[0].solver_id;
+
+        // Get all other applications to notify rejected applicants
+        const otherAppsResult = await query(
+            'SELECT application_id, solver_id FROM applications WHERE problem_id = $1 AND application_id != $2',
+            [id, applicationId]
+        );
 
         // Update application status
         await query(
@@ -549,6 +570,31 @@ router.post('/:id/accept/:applicationId', authenticate, async (req, res) => {
             `UPDATE problems_community SET status = 'in_progress', solver_id = $1 WHERE problem_id = $2`,
             [solverId, id]
         );
+
+        // Create notifications
+        const { createNotification } = require('./notifications');
+
+        // Notify accepted applicant
+        await createNotification(
+            solverId,
+            'application_accepted',
+            'Application Accepted! 🎉',
+            `Your application for "${problemResult.rows[0].title}" has been accepted!`,
+            `/problems/${id}`,
+            applicationId
+        );
+
+        // Notify rejected applicants
+        for (const app of otherAppsResult.rows) {
+            await createNotification(
+                app.solver_id,
+                'application_rejected',
+                'Application Not Selected',
+                `Your application for "${problemResult.rows[0].title}" was not selected.`,
+                `/applications`,
+                app.application_id
+            );
+        }
 
         res.json({ message: 'Application accepted successfully' });
     } catch (error) {

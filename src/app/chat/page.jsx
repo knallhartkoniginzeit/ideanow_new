@@ -24,6 +24,7 @@ export default function ChatPage() {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [sessionsLoading, setSessionsLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -54,6 +55,7 @@ export default function ChatPage() {
     };
 
     const loadSession = async (sessionId) => {
+        setSidebarOpen(false);
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/chat/sessions/${sessionId}`, {
@@ -71,6 +73,36 @@ export default function ChatPage() {
         setCurrentSession(null);
         setMessages([]);
         setInput('');
+        setSidebarOpen(false); // Close sidebar on new chat
+    };
+
+    const togglePin = async (sessionId, isPinned, e) => {
+        e.stopPropagation();
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/chat/sessions/${sessionId}/pin`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ isPinned }),
+            });
+
+            if (res.ok) {
+                // Update local state to reflect change immediately
+                setSessions(prev =>
+                    prev.map(s => s.id === sessionId ? { ...s, isPinned } : s)
+                        .sort((a, b) => {
+                            // Sort by pinned first, then by date (this is a simple client-side sort to match backend)
+                            if (a.isPinned === b.isPinned) return new Date(b.updatedAt) - new Date(a.updatedAt);
+                            return a.isPinned ? -1 : 1;
+                        })
+                );
+            }
+        } catch (error) {
+            console.error('Failed to toggle pin:', error);
+        }
     };
 
     const deleteSession = async (sessionId, e) => {
@@ -142,53 +174,101 @@ export default function ChatPage() {
     };
 
     return (
-        <div className="min-h-screen flex">
-            {/* Sidebar */}
+        <div className="min-h-screen flex relative">
+            {/* Mobile Sidebar Toggle */}
             {isAuthenticated && (
-                <aside className="hidden lg:flex w-72 border-r border-border flex-col bg-background">
-                    <div className="p-4">
-                        <button
-                            onClick={startNewChat}
-                            className="w-full btn-primary flex items-center justify-center gap-2"
-                        >
-                            <Plus className="w-5 h-5" />
-                            New Chat
-                        </button>
-                    </div>
+                <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="lg:hidden absolute top-4 left-4 z-50 p-2 bg-card border border-border rounded-lg shadow-sm"
+                >
+                    <MessageSquare className="w-5 h-5" />
+                </button>
+            )}
 
-                    <div className="flex-1 overflow-y-auto p-4 pt-0">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Recent Conversations</h3>
-                        {sessionsLoading ? (
-                            <div className="space-y-2">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="h-12 bg-secondary rounded-lg animate-pulse" />
-                                ))}
-                            </div>
-                        ) : sessions.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No conversations yet</p>
-                        ) : (
-                            <div className="space-y-1">
-                                {sessions.map((session) => (
-                                    <div
-                                        key={session.id}
-                                        onClick={() => loadSession(session.id)}
-                                        className={`group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors
+            {/* Sidebar (Desktop + Mobile Drawer) */}
+            {isAuthenticated && (
+                <>
+                    {/* Mobile Overlay */}
+                    {sidebarOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                            onClick={() => setSidebarOpen(false)}
+                        />
+                    )}
+
+                    <aside className={`
+                        fixed lg:static inset-y-0 left-0 z-50 w-72 bg-get-started border-r border-border flex flex-col transition-transform duration-300 bg-background
+                        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    `}>
+                        <div className="p-4 flex items-center justify-between lg:justify-center">
+                            <button
+                                onClick={startNewChat}
+                                className="flex-1 btn-primary flex items-center justify-center gap-2"
+                            >
+                                <Plus className="w-5 h-5" />
+                                New Chat
+                            </button>
+                            {/* Mobile Close Button */}
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                className="lg:hidden ml-2 p-2 hover:bg-secondary rounded-lg"
+                            >
+                                <ChevronRight className="w-5 h-5 rotate-180" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 pt-0">
+                            <h3 className="text-sm font-medium text-muted-foreground mb-2">Recent Conversations</h3>
+                            {sessionsLoading ? (
+                                <div className="space-y-2">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="h-12 bg-secondary rounded-lg animate-pulse" />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {sessions.map((session) => (
+                                        <div
+                                            key={session.id}
+                                            onClick={() => loadSession(session.id)}
+                                            className={`group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors
                       ${currentSession?.id === session.id ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'}`}
-                                    >
-                                        <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate flex-1 text-sm">{session.title}</span>
-                                        <button
-                                            onClick={(e) => deleteSession(session.id, e)}
-                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-all"
                                         >
-                                            <Trash2 className="w-4 h-4 text-destructive" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </aside>
+                                            <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate flex-1 text-sm font-medium">
+                                                {session.title}
+                                                {session.isPinned && <span className="ml-2 text-xs text-amber-500">📌</span>}
+                                            </span>
+                                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                                                {/* Pin Button */}
+                                                <button
+                                                    onClick={(e) => togglePin(session.id, !session.isPinned, e)}
+                                                    className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                                                    title={session.isPinned ? "Unpin Chat" : "Pin Chat"}
+                                                >
+                                                    {session.isPinned ? (
+                                                        <span className="text-amber-500">📍</span>
+                                                    ) : (
+                                                        <span className="rotate-45">📌</span>
+                                                    )}
+                                                </button>
+
+                                                {/* Delete Button */}
+                                                <button
+                                                    onClick={(e) => deleteSession(session.id, e)}
+                                                    className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"
+                                                    title="Delete Chat"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </aside>
+                </>
             )}
 
             {/* Main Chat Area */}

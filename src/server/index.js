@@ -8,6 +8,8 @@ const solutionsRoutes = require('./routes/solutions');
 const usersRoutes = require('./routes/users');
 const chatRoutes = require('./routes/chat');
 const categoriesRoutes = require('./routes/categories');
+const applicationsRoutes = require('./routes/applications');
+const { router: notificationsRoutes } = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +48,8 @@ app.use('/api/solutions', solutionsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/applications', applicationsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // 404 handler
 app.use('/api/*', (req, res) => {
