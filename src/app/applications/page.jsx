@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
-    FileText, Clock, DollarSign, CheckCircle, XCircle,
+    FileText, Clock, CheckCircle, XCircle,
     AlertCircle, ArrowLeft, ExternalLink, Loader2
 } from 'lucide-react';
 
@@ -201,8 +201,7 @@ export default function MyApplicationsPage() {
                                     )}
                                     {app.proposedBudget && (
                                         <div className="flex items-center gap-1">
-                                            <DollarSign className="w-4 h-4" />
-                                            <span>₹{app.proposedBudget.toLocaleString('en-IN')}</span>
+                                            <span className="font-medium text-foreground">₹{app.proposedBudget.toLocaleString('en-IN')}</span>
                                         </div>
                                     )}
                                     <div className="flex items-center gap-1">
